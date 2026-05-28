@@ -1,16 +1,13 @@
-body {
-    height: 200vh; /* Makes page tall enough to scroll */
-    font-family: sans-serif;
-    text-align: center;
-    padding-top: 50px;
+.download-button {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
 }
 
-.button-container {
-    margin-top: 1000px; /* Pushes buttons down so you have to scroll */
-}
-
-button {
-    margin: 10px;
-    padding: 10px 20px;
-    cursor: pointer;
+.download-button:hover {
+    background-color: #0056b3;
 }
