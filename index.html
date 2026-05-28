@@ -1,18 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: radial-gradient(circle at top right, #001a4d, #000000 70%);
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 5vh 5vw;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .view { width: 100%; max-width: 800px; display: none; }
+        .active { display: block; }
+
+        h1 { font-size: clamp(2.5rem, 8vw, 4rem); margin-bottom: 20px; }
+        .subtext { color: #aaa; font-size: 1.2rem; line-height: 1.6; }
+        .label { color: #3b82f6; font-size: 0.9rem; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; }
+        
+        .spacer { height: 25vh; }
+        .section { margin: 20vh 0; }
+
+        .btn-main {
+            background: #3b82f6; color: white; padding: 20px 60px;
+            border: none; border-radius: 12px; font-size: 1.2rem;
+            cursor: pointer; text-decoration: none; display: inline-block;
+            margin: 10px; transition: 0.3s;
+        }
+        .btn-main:hover { background: #2563eb; }
+        
+        .footer-logo { font-size: 4rem; font-weight: bold; margin-top: 20vh; opacity: 0.3; }
+    </style>
 </head>
 <body>
 
-    <h1>Novara AI Agent</h1>
+    <div id="home-view" class="view active">
+        <div>Novara ai</div>
+        <h1>Novara ai agent</h1>
+        <p class="subtext">Files, deep knowledge & fast quality awnsers, all in one place</p>
+        
+        <div class="section">
+            <div class="label">Info</div>
+            <h2>Choose the best agent, choose novara</h2>
+            <p class="subtext">Consider your own help buddy with no stress no limits and no price, novara is an entirely free ai research agent that can find awnsers lost files and can awnser a way more range of questions you may think of, there is no subscription needed no payment and no locked features so why not give it a try? choose novara</p>
+        </div>
 
-    <div class="button-container">
-        <button onclick="alert('Learn More clicked!')">Learn More</button>
-        <button onclick="window.location.href='https://discord.com'">Discord</button>
-        <button onclick="alert('Downloads clicked!')">Downloads</button>
+        <div class="section">
+            <div class="label">Options</div>
+            <h2>Choose the best version for you</h2>
+            <p>Novara is always here for you</p>
+            <button class="btn-main" onclick="showView('download-view')">Download</button>
+        </div>
+
+        <div class="footer-logo">Novara</div>
     </div>
 
-    <script src="script.js"></script>
+    <div id="download-view" class="view">
+        <h1>Download Options</h1>
+        <p class="subtext">Select how you want to proceed:</p>
+        
+        <div style="margin-top: 50px;">
+            <a href="https://github.com/jolsmenu/novara-ai-agent/releases/download/0.4.6.2/novara.ai.agent.0.4.6.2.zip" target="_blank" class="btn-main">Download Now</a>
+            <a href="https://github.com/jolsmenu/novara-ai-agent/releases" target="_blank" class="btn-main" style="background:#444;">Versions</a>
+        </div>
+        
+        <br><br>
+        <button onclick="showView('home-view')" style="background:none; border:none; color:#aaa; cursor:pointer; font-size: 1rem;">Back Home</button>
+    </div>
+
+    <script>
+        function showView(viewId) {
+            document.getElementById('home-view').classList.remove('active');
+            document.getElementById('download-view').classList.remove('active');
+            document.getElementById(viewId).classList.add('active');
+            window.scrollTo(0, 0); // Scroll back to top when switching
+        }
+    </script>
 </body>
 </html>
