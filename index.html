@@ -3,81 +3,241 @@
 <head>
     <style>
         body {
-            background: radial-gradient(circle at top right, #001a4d, #000000 70%);
+            background: radial-gradient(circle at top right, #001a4d, #000000 80%);
             color: white;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 5vh 5vw;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
+            scroll-behavior: smooth;
+            overflow-x: hidden;
         }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .site-logo {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            z-index: 100;
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            border-radius: 12px;
+            overflow: hidden;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+        .site-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Subtle blur on corners via mask or border-radius combined with a subtle inner shadow effect if possible,
+               but the cleanest way is using a rounded clip and a glow */
+        }
+        .site-logo:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6));
+        }
+
+
 
         .view { width: 100%; max-width: 800px; display: none; }
         .active { display: block; }
 
-        h1 { font-size: clamp(2.5rem, 8vw, 4rem); margin-bottom: 20px; }
-        .subtext { color: #aaa; font-size: 1.2rem; line-height: 1.6; }
-        .label { color: #3b82f6; font-size: 0.9rem; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; }
-        
+        .brand-label { color: #3b82f6; font-size: clamp(0.7rem, 1.5vw, 0.9rem); letter-spacing: 5px; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; }
+        h1 { font-size: clamp(2.5rem, 8vw, 4rem); margin-bottom: 20px; font-weight: 700; letter-spacing: -1px; }
+        h2 { font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 15px; font-weight: 600; letter-spacing: -0.5px; }
+        .subtext { color: #ccc; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.6; }
+        .label { color: #3b82f6; font-size: clamp(0.7rem, 1.5vw, 0.9rem); letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; font-weight: 600; }
+
         .spacer { height: 25vh; }
-        .section { margin: 20vh 0; }
+        .section { margin: clamp(15vh, 20vh, 25vh) 0; }
 
         .btn-main {
-            background: #3b82f6; color: white; padding: 20px 60px;
-            border: none; border-radius: 12px; font-size: 1.2rem;
+            background: #3b82f6; color: white; padding: clamp(15px, 3vh, 20px) clamp(40px, 8vw, 60px);
+            border: none; border-radius: 12px; font-size: clamp(1rem, 2vw, 1.2rem);
             cursor: pointer; text-decoration: none; display: inline-block;
-            margin: 10px; transition: 0.3s;
+            margin: 10px; transition: 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
-        .btn-main:hover { background: #2563eb; }
+        .btn-main:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
         
-        .footer-logo { font-size: 4rem; font-weight: bold; margin-top: 20vh; opacity: 0.3; }
+        .footer-logo { font-size: clamp(3rem, 10vw, 4rem); font-weight: bold; margin-top: 20vh; opacity: 0.3; }
+
+        /* Animation Classes */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
-<body>
+<body onload="initBackground()">
+    <div class="site-logo" onclick="showView('home-view')">
+        <img src="NovaraIcon.ico" alt="Novara Logo">
+    </div>
+    <canvas id="bg-canvas"></canvas>
 
     <div id="home-view" class="view active">
-        <div>Novara ai</div>
-        <h1>Novara ai agent</h1>
-        <p class="subtext">Files, deep knowledge & fast quality awnsers, all in one place</p>
-        
-        <div class="section">
+        <div class="brand-label reveal">Novara ai</div>
+        <h1 class="reveal">Novara ai agent</h1>
+        <p class="subtext reveal">Files, deep knowledge & fast quality awnsers, all in one place</p>
+
+        <div class="section reveal">
             <div class="label">Info</div>
-            <h2>Choose the best agent, choose novara</h2>
-            <p class="subtext">Consider your own help buddy with no stress no limits and no price, novara is an entirely free ai research agent that can find awnsers lost files and can awnser a way more range of questions you may think of, there is no subscription needed no payment and no locked features so why not give it a try? choose novara</p>
+            <h2 class="reveal">Choose the best agent, choose novara</h2>
+            <p class="subtext reveal">Consider your own help buddy with no stress no limits and no price, novara is an entirely free ai research agent that can find awnsers lost files and can awnser a way more range of questions you may think of, there is no subscription needed no payment and no locked features so why not give it a try? choose novara</p>
         </div>
 
-        <div class="section">
+        <div class="section reveal">
             <div class="label">Options</div>
-            <h2>Choose the best version for you</h2>
-            <p>Novara is always here for you</p>
-            <button class="btn-main" onclick="showView('download-view')">Download</button>
+            <h2 class="reveal">Choose the best version for you</h2>
+            <p class="reveal">Novara is always here for you</p>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+                <button class="btn-main reveal" onclick="showView('download-view')">Download</button>
+                <button class="btn-main reveal" onclick="showView('links-view')" style="background:#444;">Links</button>
+            </div>
         </div>
 
-        <div class="footer-logo">Novara</div>
+        <div class="footer-logo reveal">Novara</div>
     </div>
 
     <div id="download-view" class="view">
-        <h1>Download Options</h1>
-        <p class="subtext">Select how you want to proceed:</p>
-        
-        <div style="margin-top: 50px;">
-            <a href="https://github.com/jolsmenu/novara-ai-agent/releases/download/0.4.6.2/novara.ai.agent.0.4.6.2.zip" target="_blank" class="btn-main">Download Now</a>
+        <h1 class="reveal">Download Options</h1>
+        <p class="subtext reveal">Select how you want to proceed:</p>
+
+        <div style="margin-top: 50px;" class="reveal">
+            <a href="https://github.com/clept3s/novara-ai-agent/releases/download/release0.4.6.2/NovaraAi.exe" target="_blank" class="btn-main">Download Now</a>
             <a href="https://github.com/jolsmenu/novara-ai-agent/releases" target="_blank" class="btn-main" style="background:#444;">Versions</a>
         </div>
-        
+
         <br><br>
-        <button onclick="showView('home-view')" style="background:none; border:none; color:#aaa; cursor:pointer; font-size: 1rem;">Back Home</button>
+        <button onclick="showView('home-view')" style="background:black; border:1px solid #333; color:#eee; cursor:pointer; font-size: clamp(0.9rem, 2vw, 1rem); padding: 10px 20px; border-radius: 8px; transition: 0.3s;" class="reveal" onmouseover="this.style.background='#111'" onmouseout="this.style.background='black'">Back Home</button>
+    </div>
+
+    <div id="links-view" class="view">
+        <h1 class="reveal">Links</h1>
+        <p class="subtext reveal">Connect with Novara ai</p>
+
+        <div style="margin-top: 50px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;" class="reveal">
+            <a href="https://discord.gg/xd7JUKzRs6" target="_blank" class="btn-main">Discord</a>
+            <a href="https://github.com/clept3s" target="_blank" class="btn-main">GitHub</a>
+            <a href="#" target="_blank" class="btn-main">Donate</a>
+        </div>
+
+        <br><br>
+        <button onclick="showView('home-view')" style="background:black; border:1px solid #333; color:#eee; cursor:pointer; font-size: clamp(0.9rem, 2vw, 1rem); padding: 10px 20px; border-radius: 8px; transition: 0.3s;" class="reveal" onmouseover="this.style.background='#111'" onmouseout="this.style.background='black'">Back Home</button>
     </div>
 
     <script>
         function showView(viewId) {
             document.getElementById('home-view').classList.remove('active');
             document.getElementById('download-view').classList.remove('active');
+            document.getElementById('links-view').classList.remove('active');
             document.getElementById(viewId).classList.add('active');
             window.scrollTo(0, 0); // Scroll back to top when switching
+
+            // Re-trigger reveal animations for the new view
+            setTimeout(() => {
+                observeElements();
+            }, 100);
         }
+
+        function observeElements() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.reveal').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        // Background Dots Effect
+        function initBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let mouseX = -1000, mouseY = -1000;
+            let smoothedX = -1000, smoothedY = -1000;
+            const lerpFactor = 0.1; // Controls the "delay"/smoothing (lower = slower)
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            const dotSpacing = 20;
+            const revealRadius = 250;
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+
+                // Smoothly interpolate the effect center towards the mouse
+                smoothedX += (mouseX - smoothedX) * lerpFactor;
+                smoothedY += (mouseY - smoothedY) * lerpFactor;
+
+                for (let x = 0; x < width; x += dotSpacing) {
+                    for (let y = 0; y < height; y += dotSpacing) {
+                        const dist = Math.hypot(x - smoothedX, y - smoothedY);
+
+                        // Base state: slightly visible even when far away
+                        let opacity = 0.05;
+                        let size = 0.5;
+
+                        if (dist < revealRadius) {
+                            const proximity = 1 - (dist / revealRadius);
+                            // Smooth growth and brightness increase
+                            opacity = 0.05 + (proximity * 0.55);
+                            size = 0.5 + (proximity * 4); // Increases up to 4.5px
+                        }
+
+                        ctx.fillStyle = `rgba(59, 130, 246, ${opacity})`;
+                        ctx.beginPath();
+                        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+        }
+
+        // Initial call to observe elements on page load
+        window.addEventListener('DOMContentLoaded', observeElements);
     </script>
 </body>
 </html>
