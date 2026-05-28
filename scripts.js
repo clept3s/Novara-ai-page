@@ -1,13 +1,11 @@
-.download-button {
-    display: inline-block;
-    padding: 12px 24px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: bold;
-}
+function showPage(pageName) {
+    document.getElementById('home-page').style.display = 'none';
+    document.getElementById('downloads-page').style.display = 'none';
 
-.download-button:hover {
-    background-color: #0056b3;
+    if (pageName === 'home') {
+        document.getElementById('home-page').style.display = 'block';
+    } else if (pageName === 'downloads') {
+        document.getElementById('downloads-page').style.display = 'block';
+    }
 }
+console.log("Script loaded!");
