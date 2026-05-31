@@ -17,11 +17,10 @@
         }
 
         #bg-canvas {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
             z-index: -1;
             pointer-events: none;
         }
@@ -80,7 +79,62 @@
         
         .footer-logo { font-size: clamp(3rem, 10vw, 4rem); font-weight: bold; margin-top: 20vh; opacity: 0.3; }
 
-        /* Animation Classes */
+        .app-preview-wrap {
+            width: 100%;
+            margin: clamp(10vh, 15vh, 20vh) 0 0;
+            perspective: 1000px;
+        }
+        .app-preview {
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 60px rgba(59, 130, 246, 0.1), 0 20px 60px rgba(0,0,0,0.5);
+            background: rgba(255,255,255,0.03);
+            aspect-ratio: 999 / 559;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotateX(0deg) rotateY(0deg);
+            transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+            will-change: transform;
+        }
+        .app-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: opacity 0.7s ease;
+        }
+        .app-preview-placeholder {
+            color: rgba(255,255,255,0.15);
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .preview-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .preview-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+        .preview-dot.active {
+            background: #3b82f6;
+            transform: scale(1.35);
+        }
+        .preview-dot:hover:not(.active) {
+            background: rgba(255,255,255,0.45);
+        }
         .reveal {
             opacity: 0;
             transform: translateY(30px);
@@ -102,6 +156,20 @@
         <div class="brand-label reveal">Novara ai</div>
         <h1 class="reveal">Novara ai agent</h1>
         <p class="subtext reveal">Files, deep knowledge & fast quality answers, all in one place</p>
+
+        <div class="app-preview-wrap reveal">
+            <div class="app-preview" id="app-preview">
+                <img src="NovaraPreview.ico" alt="Novara App Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                <span class="app-preview-placeholder" style="display:none;">App Preview · 999 × 559</span>
+            </div>
+            <div class="preview-dots" id="preview-dots">
+                <button class="preview-dot active" data-index="0"></button>
+                <button class="preview-dot" data-index="1"></button>
+                <button class="preview-dot" data-index="2"></button>
+                <button class="preview-dot" data-index="3"></button>
+                <button class="preview-dot" data-index="4"></button>
+            </div>
+        </div>
 
         <div class="section reveal">
             <div class="label">Info</div>
@@ -155,10 +223,11 @@
             document.getElementById('download-view').classList.remove('active');
             document.getElementById('links-view').classList.remove('active');
             document.getElementById(viewId).classList.add('active');
-            window.scrollTo(0, 0); // Scroll back to top when switching
+            window.scrollTo(0, 0);
 
-            // Re-trigger reveal animations for the new view
+            // Resize canvas to match new content height, then re-trigger reveals
             setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
                 observeElements();
             }, 100);
         }
@@ -177,66 +246,226 @@
             });
         }
 
-        // Background Dots Effect
+        // Background Dots Effect (optimised)
         function initBackground() {
             const canvas = document.getElementById('bg-canvas');
             const ctx = canvas.getContext('2d');
+
             let width, height;
             let mouseX = -1000, mouseY = -1000;
             let smoothedX = -1000, smoothedY = -1000;
-            const lerpFactor = 0.1; // Controls the "delay"/smoothing (lower = slower)
-
-            function resize() {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
-            }
-
-            window.addEventListener('resize', resize);
-            resize();
-
-            window.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-            });
+            const lerpFactor = 0.1;
 
             const dotSpacing = 20;
             const revealRadius = 250;
 
-            function draw() {
-                ctx.clearRect(0, 0, width, height);
+            // Offscreen canvas holds the static "dim" dot grid so we never
+            // have to redraw every dot on every frame.
+            let offscreen = document.createElement('canvas');
+            let offCtx = offscreen.getContext('2d');
 
-                // Smoothly interpolate the effect center towards the mouse
+            function buildOffscreen() {
+                offscreen.width  = width;
+                offscreen.height = height;
+                offCtx.clearRect(0, 0, width, height);
+                offCtx.fillStyle = 'rgba(59, 130, 246, 0.05)';
+                for (let x = 0; x < width; x += dotSpacing) {
+                    for (let y = 0; y < height; y += dotSpacing) {
+                        offCtx.beginPath();
+                        offCtx.arc(x, y, 0.25, 0, Math.PI * 2); // 0.5px diameter
+                        offCtx.fill();
+                    }
+                }
+            }
+
+            let resizeTimer;
+            function resize() {
+                width  = canvas.width  = window.innerWidth;
+                height = canvas.height = document.body.scrollHeight;
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    buildOffscreen();
+                    ctx.drawImage(offscreen, 0, 0);
+                }, 150);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            buildOffscreen();
+
+            let scrollY = window.scrollY;
+            window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY + scrollY;
+            });
+
+            // Pre-build a small lookup table of dot positions inside the
+            // reveal-radius bounding box so the hot loop only touches those dots.
+            const localDots = [];
+            const pad = revealRadius + dotSpacing;
+            for (let dx = -pad; dx <= pad; dx += dotSpacing) {
+                for (let dy = -pad; dy <= pad; dy += dotSpacing) {
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < revealRadius) {
+                        const proximity = 1 - (dist / revealRadius);
+                        localDots.push({
+                            dx, dy,
+                            opacity: 0.05 + proximity * 0.55,
+                            radius:  (0.5  + proximity * 4) / 2
+                        });
+                    }
+                }
+            }
+
+            // Track the previous smoothed position so we can erase only the
+            // area that actually changed between frames.
+            let prevX = smoothedX, prevY = smoothedY;
+
+            function draw() {
                 smoothedX += (mouseX - smoothedX) * lerpFactor;
                 smoothedY += (mouseY - smoothedY) * lerpFactor;
 
-                for (let x = 0; x < width; x += dotSpacing) {
-                    for (let y = 0; y < height; y += dotSpacing) {
-                        const dist = Math.hypot(x - smoothedX, y - smoothedY);
-
-                        // Base state: slightly visible even when far away
-                        let opacity = 0.05;
-                        let size = 0.5;
-
-                        if (dist < revealRadius) {
-                            const proximity = 1 - (dist / revealRadius);
-                            // Smooth growth and brightness increase
-                            opacity = 0.05 + (proximity * 0.55);
-                            size = 0.5 + (proximity * 4); // Increases up to 4.5px
-                        }
-
-                        ctx.fillStyle = `rgba(59, 130, 246, ${opacity})`;
-                        ctx.beginPath();
-                        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
+                // Skip the repaint if the cursor hasn't moved meaningfully.
+                if (Math.abs(smoothedX - prevX) < 0.5 && Math.abs(smoothedY - prevY) < 0.5) {
+                    requestAnimationFrame(draw);
+                    return;
                 }
+
+                // Erase the previous glow region: clear it first, then
+                // restore the static dim dots from the offscreen cache.
+                const erasePad = revealRadius + dotSpacing * 2;
+                const ex = prevX - erasePad, ey = prevY - erasePad;
+                const ew = erasePad * 2,     eh = erasePad * 2;
+                ctx.clearRect(ex, ey, ew, eh);
+                ctx.drawImage(offscreen, ex, ey, ew, eh, ex, ey, ew, eh);
+
+                // Draw the lit-up dots around the new cursor position.
+                // Snap each dot position to the nearest grid point so it
+                // lines up perfectly with the offscreen layer.
+                const snapX = Math.round(smoothedX / dotSpacing) * dotSpacing;
+                const snapY = Math.round(smoothedY / dotSpacing) * dotSpacing;
+
+                for (const d of localDots) {
+                    const dotX = snapX + d.dx;
+                    const dotY = snapY + d.dy;
+                    if (dotX < 0 || dotY < 0 || dotX > width || dotY > height) continue;
+                    ctx.fillStyle = `rgba(59,130,246,${d.opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, d.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                prevX = smoothedX;
+                prevY = smoothedY;
                 requestAnimationFrame(draw);
             }
 
+            // Seed the canvas with the static grid before the first frame.
+            ctx.drawImage(offscreen, 0, 0);
             draw();
         }
 
-        // Initial call to observe elements on page load
+        // 3D tilt on app preview
+        (function() {
+            const MAX_TILT = 6; // degrees — keep it subtle
+
+            function initTilt() {
+                const card = document.getElementById('app-preview');
+                if (!card) return;
+
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    // Normalise cursor position to -1..1 within the card
+                    const nx = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+                    const ny = ((e.clientY - rect.top)  / rect.height) * 2 - 1;
+                    const rotY =  nx * MAX_TILT;
+                    const rotX = -ny * MAX_TILT;
+                    card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                    card.style.boxShadow = `
+                        ${-rotY * 2}px ${rotX * 2}px 60px rgba(59,130,246,0.18),
+                        0 20px 60px rgba(0,0,0,0.5)
+                    `;
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'rotateX(0deg) rotateY(0deg)';
+                    card.style.boxShadow = '0 0 60px rgba(59,130,246,0.1), 0 20px 60px rgba(0,0,0,0.5)';
+                });
+            }
+
+            // Run after DOM ready and also re-attach if the view re-renders
+            document.addEventListener('DOMContentLoaded', initTilt);
+        })();
+
+        // App preview slideshow — cycles through 5 images 5 times then stops
+        (function() {
+            const images = [
+                'NovaraPreview.ico',
+                'NovaraPreview2.ico',
+                'NovaraPreview3.ico',
+                'NovaraPreview4.ico',
+                'NovaraPreview5.ico'
+            ];
+            const INTERVAL   = 3000; // ms between auto-advances
+            const FADE_TIME  = 700;  // ms — must match CSS transition
+            const MAX_CYCLES = 5;
+
+            function initSlideshow() {
+                const img  = document.querySelector('#app-preview img');
+                const dots = document.querySelectorAll('.preview-dot');
+                if (!img || !dots.length) return;
+
+                let index  = 0;
+                let cycles = 0;
+                let timer  = null;
+
+                function goTo(newIndex, fromAuto) {
+                    if (newIndex === index) return;
+                    index = newIndex;
+
+                    // Update dots
+                    dots.forEach((d, i) => d.classList.toggle('active', i === index));
+
+                    // Crossfade image
+                    img.style.opacity = '0';
+                    setTimeout(() => {
+                        img.src = images[index];
+                        img.style.opacity = '1';
+                    }, FADE_TIME);
+
+                    if (fromAuto && index === 0) {
+                        cycles++;
+                        if (cycles >= MAX_CYCLES) {
+                            clearInterval(timer);
+                            timer = null;
+                        }
+                    }
+                }
+
+                // Wire up dot clicks — clicking a dot restarts the auto-timer from that slide
+                dots.forEach((dot) => {
+                    dot.addEventListener('click', () => {
+                        const target = parseInt(dot.dataset.index, 10);
+                        // Reset auto-timer so it doesn't jump immediately after a click
+                        if (timer) { clearInterval(timer); startTimer(); }
+                        goTo(target, false);
+                    });
+                });
+
+                function startTimer() {
+                    timer = setInterval(() => {
+                        const next = (index + 1) % images.length;
+                        goTo(next, true);
+                    }, INTERVAL);
+                }
+
+                startTimer();
+            }
+
+            document.addEventListener('DOMContentLoaded', initSlideshow);
+        })();
         window.addEventListener('DOMContentLoaded', observeElements);
     </script>
 </body>
