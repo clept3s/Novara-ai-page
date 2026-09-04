@@ -1,168 +1,405 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Novara AI Agent</title>
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --blue: #3b82f6;
+            --blue-dark: #1e3a5f;
+            --blue-subtle: rgba(59, 130, 246, 0.08);
+            --glass-bg: rgba(10, 22, 40, 0.45);
+            --glass-border: rgba(59, 130, 246, 0.08);
+            --radius: 12px;
+            --transition: 0.3s ease;
+        }
+
+        html { scroll-behavior: smooth; }
+
         body {
-            background: radial-gradient(circle at top right, #001a4d, #000000 80%);
-            color: white;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 5vh 5vw;
+            background: #000005;
+            color: #e8edf5;
+            font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            scroll-behavior: smooth;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
         }
 
         #bg-canvas {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
+            height: 100%;
             z-index: -1;
             pointer-events: none;
         }
 
+        /* ═══ SITE LOGO ═══ */
         .site-logo {
             position: fixed;
             top: 20px;
-            left: 20px;
-            width: 50px;
-            height: 50px;
-            z-index: 100;
+            left: 24px;
+            width: 72px;
+            height: 72px;
+            z-index: 1000;
             cursor: pointer;
-            transition: transform 0.3s ease, filter 0.3s ease;
             border-radius: 12px;
             overflow: hidden;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+            background: rgba(10, 22, 40, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            padding: 6px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            transition: transform var(--transition), box-shadow var(--transition);
         }
-        .site-logo img {
+        .site-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+        .site-logo:hover { transform: scale(1.06); box-shadow: 0 6px 32px rgba(59, 130, 246, 0.2); }
+
+        /* ═══ TOP NAV ═══ */
+        .top-nav {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            display: flex;
+            gap: 2px;
+            background: rgba(10, 22, 40, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.06);
+            border-radius: 100px;
+            padding: 4px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        }
+        .top-nav button {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 6px 16px;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .top-nav button:hover { color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.04); }
+        .top-nav button.active-nav { color: #fff; background: var(--blue); }
+
+        /* ═══ PAGE STRUCTURE ═══ */
+        .page {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            /* Subtle blur on corners via mask or border-radius combined with a subtle inner shadow effect if possible,
-               but the cleanest way is using a rounded clip and a glow */
+            max-width: 800px;
+            padding: 110px 24px 40px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
         }
-        .site-logo:hover {
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6));
+        .page.active-page { display: flex; }
+
+        /* ═══ TYPOGRAPHY ═══ */
+        .eyebrow {
+            color: var(--blue);
+            font-size: 0.75rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
-
-
-        .view { width: 100%; max-width: 800px; display: none; }
-        .active { display: block; }
-
-        .brand-label { color: #3b82f6; font-size: clamp(0.7rem, 1.5vw, 0.9rem); letter-spacing: 5px; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; }
-        h1 { font-size: clamp(2.5rem, 8vw, 4rem); margin-bottom: 20px; font-weight: 700; letter-spacing: -1px; }
-        h2 { font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 15px; font-weight: 600; letter-spacing: -0.5px; }
-        .subtext { color: #ccc; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.6; }
-        .label { color: #3b82f6; font-size: clamp(0.7rem, 1.5vw, 0.9rem); letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; font-weight: 600; }
-
-        .spacer { height: 25vh; }
-        .section { margin: clamp(15vh, 20vh, 25vh) 0; }
-
-        .btn-main {
-            background: #3b82f6; color: white; padding: clamp(15px, 3vh, 20px) clamp(40px, 8vw, 60px);
-            border: none; border-radius: 12px; font-size: clamp(1rem, 2vw, 1.2rem);
-            cursor: pointer; text-decoration: none; display: inline-block;
-            margin: 10px; transition: 0.3s ease;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        h1 {
+            font-size: clamp(2.4rem, 7vw, 3.8rem);
+            font-weight: 700;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            color: #fff;
         }
-        .btn-main:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-        
-        .footer-logo { font-size: clamp(3rem, 10vw, 4rem); font-weight: bold; margin-top: 20vh; opacity: 0.3; }
 
-        .app-preview-wrap {
+        h2 {
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+            margin-bottom: 12px;
+            color: #f0f4ff;
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .subtext {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+            line-height: 1.7;
+            max-width: 600px;
+            text-align: center;
+        }
+        .subtext strong { color: rgba(255, 255, 255, 0.8); }
+        .subtext.left { text-align: left; }
+
+        /* ═══ BUTTONS ═══ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2); }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); }
+        .btn-ghost { background: transparent; color: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .btn-ghost:hover { background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.8); border-color: rgba(255, 255, 255, 0.12); }
+        .btn-back { background: transparent; color: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.06); padding: 8px 20px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-family: inherit; transition: var(--transition); margin-top: 36px; }
+        .btn-back:hover { background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.7); border-color: rgba(255, 255, 255, 0.1); }
+        .btn-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; }
+
+        /* ═══ GLASS CARDS ═══ */
+        .section-card {
             width: 100%;
-            margin: clamp(10vh, 15vh, 20vh) 0 0;
-            perspective: 1000px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: clamp(24px, 4vw, 40px);
+            margin: 12vh 0 0;
+            text-align: center;
         }
+        .section-card .subtext { max-width: 520px; margin: 0 auto; }
+        .section-card.left { text-align: left; }
+        .section-card.left .subtext { margin: 0; }
+
+        /* ═══ APP PREVIEW ═══ */
+        .app-preview-wrap { width: 100%; margin: 10vh 0 0; perspective: 1000px; }
         .app-preview {
             width: 100%;
-            border-radius: 16px;
+            border-radius: var(--radius);
             overflow: hidden;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            box-shadow: 0 0 60px rgba(59, 130, 246, 0.1), 0 20px 60px rgba(0,0,0,0.5);
-            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.04), 0 20px 60px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.01);
             aspect-ratio: 999 / 559;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform: rotateX(0deg) rotateY(0deg);
-            transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
-            will-change: transform;
+            transition: transform 0.15s ease-out;
         }
-        .app-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            transition: opacity 0.7s ease;
+        .app-preview img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.5s ease; }
+        .app-preview-placeholder { color: rgba(255, 255, 255, 0.06); font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; }
+        .preview-dots { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+        .preview-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: none; padding: 0; cursor: pointer; transition: background 0.3s ease, transform 0.3s ease; }
+        .preview-dot.active { background: var(--blue); transform: scale(1.3); }
+        .preview-dot:hover:not(.active) { background: rgba(255, 255, 255, 0.25); }
+
+        /* ═══ FOOTER ═══ */
+        .site-footer { width: 100%; margin-top: 14vh; padding: 20px 0 8px; border-top: 1px solid rgba(59, 130, 246, 0.04); text-align: center; }
+        .site-footer p { color: rgba(255, 255, 255, 0.15); font-size: 0.7rem; letter-spacing: 0.3px; }
+
+        /* ═══ BENEFIT CARDS ═══ */
+        .benefits { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; justify-content: center; }
+        .benefit-card {
+            background: rgba(10, 22, 40, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.06);
+            border-radius: var(--radius);
+            padding: 20px 16px;
+            flex: 1 1 170px;
+            min-width: 150px;
+            max-width: 210px;
+            text-align: center;
+            transition: border var(--transition), transform var(--transition);
         }
-        .app-preview-placeholder {
-            color: rgba(255,255,255,0.15);
-            font-size: 0.9rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-        }
-        .preview-dots {
+        .benefit-card:hover { border-color: rgba(59, 130, 246, 0.15); transform: translateY(-3px); }
+        .benefit-icon { font-size: 1.5rem; margin-bottom: 8px; opacity: 0.8; }
+        .benefit-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; color: #fff; }
+        .benefit-card p { font-size: 0.8rem; color: rgba(255,255,255,0.45); line-height: 1.4; margin: 0; }
+
+        /* ═══ ENHANCED COMPARISON TABLE ═══ */
+        .compare-section { width: 100%; margin: 28px 0; border-radius: var(--radius); overflow: hidden; border: 1px solid rgba(59, 130, 246, 0.06); }
+        .compare-header {
             display: flex;
+            padding: 14px 16px;
+            background: rgba(59, 130, 246, 0.06);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            gap: 12px;
+        }
+        .compare-header span:first-child { flex: 0 0 130px; color: rgba(255,255,255,0.3); }
+        .compare-header span:nth-child(2) { flex: 1; color: rgba(255,255,255,0.2); }
+        .compare-header span:last-child { flex: 1; color: var(--blue); }
+        .compare-row {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.04);
+            gap: 12px;
+            transition: background var(--transition);
+        }
+        .compare-row:last-child { border-bottom: none; }
+        .compare-row:nth-child(even) { background: rgba(59, 130, 246, 0.02); }
+        .compare-row:hover { background: rgba(59, 130, 246, 0.04); }
+        .compare-category { flex: 0 0 130px; font-weight: 600; color: #7aa8ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .compare-others { flex: 1; color: rgba(255,255,255,0.3); font-size: 0.85rem; }
+        .compare-novara { flex: 1; color: #fff; font-size: 0.85rem; }
+        .compare-novara strong { color: var(--blue); }
+        .compare-check { color: #22c55e; margin-right: 4px; }
+        .compare-cross { color: rgba(255,255,255,0.15); margin-right: 4px; }
+
+        /* ═══ PROBLEM / SOLUTION SPLIT ═══ */
+        .split-section {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .split-card {
+            flex: 1;
+            min-width: 200px;
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            background: rgba(10, 22, 40, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.06);
+            transition: border var(--transition);
+        }
+        .split-card:hover { border-color: rgba(59, 130, 246, 0.15); }
+        .split-card.problem { border-left: 3px solid rgba(255, 100, 100, 0.3); }
+        .split-card.solution { border-left: 3px solid var(--blue); }
+        .split-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; margin-bottom: 10px; }
+        .split-card.problem .split-label { color: rgba(255, 100, 100, 0.6); }
+        .split-card.solution .split-label { color: var(--blue); }
+        .split-card ul { list-style: none; padding: 0; }
+        .split-card li { padding: 6px 0 6px 20px; position: relative; font-size: 0.85rem; color: rgba(255,255,255,0.55); line-height: 1.5; }
+        .split-card.problem li::before { content: "\2716"; position: absolute; left: 0; color: rgba(255,100,100,0.4); font-size: 0.7rem; }
+        .split-card.solution li::before { content: "\2713"; position: absolute; left: 0; color: var(--blue); font-size: 0.7rem; }
+
+        /* ═══ STATS ROW ═══ */
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+            margin-top: 24px;
             justify-content: center;
-            gap: 8px;
-            margin-top: 14px;
         }
-        .preview-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            padding: 0;
-            cursor: pointer;
-            transition: background 0.3s ease, transform 0.3s ease;
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            max-width: 160px;
+            text-align: center;
+            padding: 16px 12px;
+            background: rgba(10, 22, 40, 0.25);
+            border: 1px solid rgba(59, 130, 246, 0.04);
+            border-radius: var(--radius);
         }
-        .preview-dot.active {
-            background: #3b82f6;
-            transform: scale(1.35);
+        .stat-number { font-size: 1.6rem; font-weight: 700; color: #fff; }
+        .stat-number .blue { color: var(--blue); }
+        .stat-label { font-size: 0.7rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+        /* ═══ FEATURE GRID (what you get) ═══ */
+        .feature-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: 100%;
+            margin-top: 20px;
         }
-        .preview-dot:hover:not(.active) {
-            background: rgba(255,255,255,0.45);
+        .feature-item {
+            flex: 1 1 200px;
+            padding: 14px 16px;
+            background: rgba(10, 22, 40, 0.25);
+            border: 1px solid rgba(59, 130, 246, 0.04);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: border var(--transition);
         }
-        .reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.8s ease-out;
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
+        .feature-item:hover { border-color: rgba(59, 130, 246, 0.12); }
+        .feature-check { color: #22c55e; font-size: 1rem; flex-shrink: 0; }
+        .feature-item span:last-child { font-size: 0.85rem; color: rgba(255,255,255,0.65); line-height: 1.3; }
+
+        /* ═══ SEPARATOR ═══ */
+        .separator { width: 40px; height: 2px; background: var(--blue); margin: 28px auto; opacity: 0.3; border-radius: 2px; }
+        .separator.left { margin: 28px 0; }
+
+        /* ═══ REVEAL ═══ */
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal-1 { transition-delay: 0.05s; }
+        .reveal-2 { transition-delay: 0.1s; }
+        .reveal-3 { transition-delay: 0.18s; }
+        .reveal-4 { transition-delay: 0.26s; }
+        .reveal-5 { transition-delay: 0.34s; }
+        .reveal-6 { transition-delay: 0.42s; }
+        .reveal-7 { transition-delay: 0.50s; }
+
+        .page { animation: fadeIn 0.35s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 600px) {
+            .top-nav { top: 16px; gap: 1px; padding: 3px; }
+            .top-nav button { font-size: 0.7rem; padding: 5px 12px; }
+            .site-logo { width: 56px; height: 56px; top: 14px; left: 14px; }
+            .page { padding: 90px 16px 30px; }
+            .section-card { padding: 20px 16px; }
+            .btn { padding: 10px 24px; font-size: 0.85rem; }
+            .compare-category { flex-basis: 90px; font-size: 0.7rem; }
+            .compare-row { padding: 10px 8px; flex-wrap: wrap; }
+            .compare-header { display: none; }
+            .split-card { min-width: 100%; }
+            .stat-item { min-width: 100px; }
         }
     </style>
 </head>
-<body onload="initBackground()">
-    <div class="site-logo" onclick="showView('home-view')">
-        <img src="NovaraIcon.ico" alt="Novara Logo">
-    </div>
+<body>
+
     <canvas id="bg-canvas"></canvas>
 
-    <div id="home-view" class="view active">
-        <div class="brand-label reveal">Novara ai</div>
-        <h1 class="reveal">Novara ai agent</h1>
-        <p class="subtext reveal">Files, deep knowledge & fast quality answers, all in one place</p>
+    <div class="site-logo" onclick="showPage('home')" title="Home">
+        <img src="NovaraIcon.ico" alt="Novara Logo" />
+    </div>
 
-        <div class="app-preview-wrap reveal">
-            <div class="app-preview" id="app-preview">
-                <img src="NovaraPreview.ico" alt="Novara App Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                <span class="app-preview-placeholder" style="display:none;">App Preview · 999 × 559</span>
+    <nav class="top-nav" id="topNav">
+        <button class="active-nav" data-page="home" onclick="showPage('home')">Home</button>
+        <button data-page="why" onclick="showPage('why')">Why Novara</button>
+        <button data-page="download" onclick="showPage('download')">Download</button>
+        <button data-page="links" onclick="showPage('links')">Links</button>
+    </nav>
+
+    <!-- ═══ HOME ═══ -->
+    <div id="page-home" class="page active-page">
+        <div class="eyebrow reveal reveal-1">Novara AI</div>
+        <h1 class="reveal reveal-2">Novara AI Agent</h1>
+        <p class="subtext reveal reveal-3">A free AI research assistant that finds answers, locates lost files, and handles a wide range of questions.</p>
+
+        <div class="app-preview-wrap reveal reveal-4">
+            <div class="app-preview" id="appPreview">
+                <img src="NovaraPreview.ico" alt="Novara App Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" />
+                <span class="app-preview-placeholder" style="display:none;">App Preview</span>
             </div>
-            <div class="preview-dots" id="preview-dots">
+            <div class="preview-dots" id="previewDots">
                 <button class="preview-dot active" data-index="0"></button>
                 <button class="preview-dot" data-index="1"></button>
                 <button class="preview-dot" data-index="2"></button>
@@ -171,302 +408,311 @@
             </div>
         </div>
 
-        <div class="section reveal">
-            <div class="label">Info</div>
-            <h2 class="reveal">Choose the best agent, choose novara</h2>
-            <p class="subtext reveal">Consider your own help buddy with no stress no limits and no price, novara is an entirely free ai research agent that can find answers lost files and can awnser a way more range of questions you may think of, there is no subscription needed no payment and no locked features so why not give it a try? choose novara</p>
+        <div class="section-card reveal reveal-5">
+            <div class="eyebrow">Info</div>
+            <h2>Choose the best agent, choose Novara</h2>
+            <p class="subtext">Consider your own help buddy — no stress, no limits, no price. Novara is an entirely free AI research agent that can find answers, locate lost files, and answer a far wider range of questions than you might think. No subscription. No payment. No locked features. Why not give it a try? <strong>Choose Novara.</strong></p>
         </div>
 
-        <div class="section reveal">
-            <div class="label">Options</div>
-            <h2 class="reveal">Choose the best version for you</h2>
-            <p class="reveal">Novara is always here for you</p>
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
-                <button class="btn-main reveal" onclick="showView('download-view')">Download</button>
-                <button class="btn-main reveal" onclick="showView('links-view')" style="background:#444;">Links</button>
+        <div class="section-card reveal reveal-5" style="margin-top:5vh;">
+            <div class="eyebrow">Options</div>
+            <h2>Choose the best version for you</h2>
+            <p class="subtext" style="margin-bottom:4px;">Novara is always here for you.</p>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="showPage('download')">Download</button>
+                <button class="btn btn-ghost" onclick="showPage('links')">Links</button>
             </div>
         </div>
 
-        <div class="footer-logo reveal">Novara</div>
+        <footer class="site-footer">
+            <p>&copy; 2026 Novara AI &middot; All rights reserved.</p>
+        </footer>
     </div>
 
-    <div id="download-view" class="view">
-        <h1 class="reveal">Download Options</h1>
-        <p class="subtext reveal">Select how you want to proceed:</p>
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!--  WHY NOVARA — ENHANCED                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div id="page-why" class="page">
 
-        <div style="margin-top: 50px;" class="reveal">
-            <a href="https://github.com/clept3s/novara-ai-agent/releases/download/0.4.8/NovaraAI.exe" target="_blank" class="btn-main">Download Now</a>
-            <a href="https://github.com/jolsmenu/novara-ai-agent/releases" target="_blank" class="btn-main" style="background:#444;">Versions</a>
+        <!-- Header -->
+        <div class="eyebrow reveal reveal-1">Why Novara?</div>
+        <h1 class="reveal reveal-2">The smarter choice for AI assistance</h1>
+        <p class="subtext reveal reveal-3">Most AI tools and search engines limit what you can do unless you pay. Novara is built different — every feature is free, your privacy is protected, and nothing is locked away.</p>
+
+        <!-- Problem vs Solution split -->
+        <div class="split-section reveal reveal-4">
+            <div class="split-card problem">
+                <div class="split-label">The Problem</div>
+                <ul>
+                    <li>Paid subscriptions for basic features</li>
+                    <li>Cannot find or recover lost files</li>
+                    <li>Shallow answers with limited depth</li>
+                    <li>Cluttered with ads and tracking</li>
+                    <li>Key tools locked behind paywalls</li>
+                    <li>Account creation and setup required</li>
+                </ul>
+            </div>
+            <div class="split-card solution">
+                <div class="split-label">The Novara Solution</div>
+                <ul>
+                    <li>100% free with no subscriptions</li>
+                    <li>Locates and retrieves lost files</li>
+                    <li>Deep research across any topic</li>
+                    <li>No ads, no tracking, no data selling</li>
+                    <li>Every feature unlocked for everyone</li>
+                    <li>Works out of the box, no account needed</li>
+                </ul>
+            </div>
         </div>
 
-        <br><br>
-        <button onclick="showView('home-view')" style="background:black; border:1px solid #333; color:#eee; cursor:pointer; font-size: clamp(0.9rem, 2vw, 1rem); padding: 10px 20px; border-radius: 8px; transition: 0.3s;" class="reveal" onmouseover="this.style.background='#111'" onmouseout="this.style.background='black'">Back Home</button>
+        <div class="separator reveal reveal-5"></div>
+
+        <!-- Quick stats -->
+        <div class="stats-row reveal reveal-5">
+            <div class="stat-item">
+                <div class="stat-number"><span class="blue">100</span>%</div>
+                <div class="stat-label">Free to use</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number"><span class="blue">0</span></div>
+                <div class="stat-label">Subscriptions</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number"><span class="blue">0</span></div>
+                <div class="stat-label">Ads or tracking</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number"><span class="blue">Full</span></div>
+                <div class="stat-label">Feature access</div>
+            </div>
+        </div>
+
+        <div class="separator reveal reveal-6"></div>
+
+        <!-- Head-to-head comparison -->
+        <div class="section-card left reveal reveal-6">
+            <div class="eyebrow" style="text-align:center;">Head to Head</div>
+            <h2 style="text-align:center;">Novara vs the rest</h2>
+            <p class="subtext" style="text-align:center; max-width:560px; margin:0 auto 16px;">A straight comparison across the features that matter most.</p>
+
+            <div class="compare-section">
+                <div class="compare-header">
+                    <span>Category</span>
+                    <span>Other AI &amp; Search</span>
+                    <span>Novara</span>
+                </div>
+                <div class="compare-row">
+                    <div class="compare-category">Cost</div>
+                    <div class="compare-others"><span class="compare-cross">&#10008;</span> Paid subscriptions, premium tiers, usage limits</div>
+                    <div class="compare-novara"><span class="compare-check">&#10003;</span> <strong>100% free</strong> with no subscriptions or limits</div>
+                </div>
+                <div class="compare-row">
+                    <div class="compare-category">File Support</div>
+                    <div class="compare-others"><span class="compare-cross">&#10008;</span> Cannot locate or retrieve lost files</div>
+                    <div class="compare-novara"><span class="compare-check">&#10003;</span> <strong>Finds and recovers</strong> lost files automatically</div>
+                </div>
+                <div class="compare-row">
+                    <div class="compare-category">Knowledge Range</div>
+                    <div class="compare-others"><span class="compare-cross">&#10008;</span> Limited to basic or surface level queries</div>
+                    <div class="compare-novara"><span class="compare-check">&#10003;</span> <strong>Deep research</strong> across a wide range of topics</div>
+                </div>
+                <div class="compare-row">
+                    <div class="compare-category">Response Speed</div>
+                    <div class="compare-others"><span class="compare-cross">&#10008;</span> Slow, cluttered with ads and sponsored results</div>
+                    <div class="compare-novara"><span class="compare-check">&#10003;</span> <strong>Fast, direct answers</strong> with no distractions</div>
+                </div>
+                <div class="compare-row">
+                    <div class="compare-category">Privacy</div>
+                    <div class="compare-others"><span class="compare-cross">&#10008;</span> Tracks searches, sells data, shows targeted ads</div>
+                    <div class="compare-novara"><span class="compare-check">&#10003;</span> <strong>No tracking, no ads,</strong> your data stays yours</div>
+                </div>
+                <div class="compare-row">
+                    <div class="compare-category">Accessibility</div>
+                    <div class="compare-others"><span class="compare-cross">&#10008;</span> Key features locked behind paywalls</div>
+                    <div class="compare-novara"><span class="compare-check">&#10003;</span> <strong>Every feature unlocked</strong> for every user</div>
+                </div>
+                <div class="compare-row" style="border-bottom:none;">
+                    <div class="compare-category">Setup</div>
+                    <div class="compare-others"><span class="compare-cross">&#10008;</span> Complex setup, account creation required</div>
+                    <div class="compare-novara"><span class="compare-check">&#10003;</span> <strong>Works right out of the box,</strong> no account needed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="separator reveal reveal-6"></div>
+
+        <!-- What you get with Novara -->
+        <div class="reveal reveal-6" style="width:100%;">
+            <div class="eyebrow" style="text-align:center;">What You Get</div>
+            <h2 style="text-align:center;">Everything you need, nothing you don't</h2>
+            <p class="subtext" style="text-align:center; max-width:560px; margin:0 auto;">No bloat, no upsells, no hidden limitations. Just a capable AI assistant that works.</p>
+            <div class="feature-grid">
+                <div class="feature-item"><span class="feature-check">&#10003;</span> <span>Deep research and knowledge retrieval</span></div>
+                <div class="feature-item"><span class="feature-check">&#10003;</span> <span>Lost file location and recovery</span></div>
+                <div class="feature-item"><span class="feature-check">&#10003;</span> <span>Fast, high quality answers</span></div>
+                <div class="feature-item"><span class="feature-check">&#10003;</span> <span>Wide range of question handling</span></div>
+                <div class="feature-item"><span class="feature-check">&#10003;</span> <span>No subscription or payment needed</span></div>
+                <div class="feature-item"><span class="feature-check">&#10003;</span> <span>Privacy focused, no tracking</span></div>
+            </div>
+        </div>
+
+        <div class="separator reveal reveal-7"></div>
+
+        <!-- Final CTA -->
+        <div class="section-card reveal reveal-7" style="margin-top:0;">
+            <div class="eyebrow">The Bottom Line</div>
+            <h2>Novara gives you more for less</h2>
+            <p class="subtext" style="max-width:520px; margin:0 auto;">Other AI assistants and search engines limit what you can do unless you pay. Novara flips that model: every feature is free, every capability is available, and your privacy is respected. You get deep research, file recovery, and fast answers without giving up your data or your wallet.</p>
+            <div style="margin-top:24px;">
+                <button class="btn btn-primary" onclick="showPage('download')" style="margin:0;">Try Novara Free</button>
+            </div>
+        </div>
+
+        <button class="btn-back" onclick="showPage('home')">&larr; Back Home</button>
+        <footer class="site-footer">
+            <p>&copy; 2026 Novara AI &middot; All rights reserved.</p>
+        </footer>
     </div>
 
-    <div id="links-view" class="view">
-        <h1 class="reveal">Links</h1>
-        <p class="subtext reveal">Connect with Novara ai</p>
-
-        <div style="margin-top: 50px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;" class="reveal">
-            <a href="https://discord.gg/xd7JUKzRs6" target="_blank" class="btn-main">Discord</a>
-            <a href="https://github.com/clept3s" target="_blank" class="btn-main">GitHub</a>
-            <a href="#" target="_blank" class="btn-main">Donate</a>
+    <!-- ═══ DOWNLOAD ═══ -->
+    <div id="page-download" class="page">
+        <div class="eyebrow reveal reveal-1">Get Started</div>
+        <h1 class="reveal reveal-2">Download Options</h1>
+        <p class="subtext reveal reveal-3">Select how you want to proceed.</p>
+        <div class="btn-group reveal reveal-4" style="margin-top:36px;">
+            <a href="https://github.com/clept3s/novara-ai-agent/releases/download/0.4.8/NovaraAI.exe" target="_blank" class="btn btn-primary">Download Now</a>
+            <a href="https://github.com/jolsmenu/novara-ai-agent/releases" target="_blank" class="btn btn-ghost">All Versions</a>
         </div>
+        <button class="btn-back" onclick="showPage('home')">&larr; Back Home</button>
+    </div>
 
-        <br><br>
-        <button onclick="showView('home-view')" style="background:black; border:1px solid #333; color:#eee; cursor:pointer; font-size: clamp(0.9rem, 2vw, 1rem); padding: 10px 20px; border-radius: 8px; transition: 0.3s;" class="reveal" onmouseover="this.style.background='#111'" onmouseout="this.style.background='black'">Back Home</button>
+    <!-- ═══ LINKS ═══ -->
+    <div id="page-links" class="page">
+        <div class="eyebrow reveal reveal-1">Connect</div>
+        <h1 class="reveal reveal-2">Links</h1>
+        <p class="subtext reveal reveal-3">Connect with Novara AI.</p>
+        <div class="btn-group reveal reveal-4" style="margin-top:36px;">
+            <a href="https://discord.gg/xd7JUKzRs6" target="_blank" class="btn btn-primary">Discord</a>
+            <a href="https://github.com/clept3s" target="_blank" class="btn btn-ghost">GitHub</a>
+        </div>
+        <button class="btn-back" onclick="showPage('home')">&larr; Back Home</button>
     </div>
 
     <script>
-        function showView(viewId) {
-            document.getElementById('home-view').classList.remove('active');
-            document.getElementById('download-view').classList.remove('active');
-            document.getElementById('links-view').classList.remove('active');
-            document.getElementById(viewId).classList.add('active');
-            window.scrollTo(0, 0);
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            const target = document.getElementById('page-' + id);
+            if (target) target.classList.add('active-page');
 
-            // Resize canvas to match new content height, then re-trigger reveals
-            setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-                observeElements();
-            }, 100);
-        }
-
-        function observeElements() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                    }
-                });
-            }, { threshold: 0.1 });
-
-            document.querySelectorAll('.reveal').forEach(el => {
-                observer.observe(el);
+            document.querySelectorAll('.top-nav button').forEach(btn => {
+                btn.classList.toggle('active-nav', btn.dataset.page === id);
             });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            setTimeout(() => {
+                observeReveals();
+                if (window.__bg) window.__bg.resize();
+            }, 120);
         }
 
-        // Background Dots Effect (optimised)
-        function initBackground() {
+        let revealObserver;
+        function observeReveals() {
+            if (revealObserver) revealObserver.disconnect();
+            revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('visible');
+                });
+            }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+            document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+        }
+
+        /* ─── Subtle ambient light ─── */
+        (function initAmbient() {
             const canvas = document.getElementById('bg-canvas');
             const ctx = canvas.getContext('2d');
+            let W, H;
+            let mx = 0.5, my = 0.5;
 
-            let width, height;
-            let mouseX = -1000, mouseY = -1000;
-            let smoothedX = -1000, smoothedY = -1000;
-            const lerpFactor = 0.1;
-
-            const dotSpacing = 20;
-            const revealRadius = 250;
-
-            // Offscreen canvas holds the static "dim" dot grid so we never
-            // have to redraw every dot on every frame.
-            let offscreen = document.createElement('canvas');
-            let offCtx = offscreen.getContext('2d');
-
-            function buildOffscreen() {
-                offscreen.width  = width;
-                offscreen.height = height;
-                offCtx.clearRect(0, 0, width, height);
-                offCtx.fillStyle = 'rgba(59, 130, 246, 0.05)';
-                for (let x = 0; x < width; x += dotSpacing) {
-                    for (let y = 0; y < height; y += dotSpacing) {
-                        offCtx.beginPath();
-                        offCtx.arc(x, y, 0.25, 0, Math.PI * 2); // 0.5px diameter
-                        offCtx.fill();
-                    }
-                }
-            }
-
-            let resizeTimer;
             function resize() {
-                width  = canvas.width  = window.innerWidth;
-                height = canvas.height = document.body.scrollHeight;
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    buildOffscreen();
-                    ctx.drawImage(offscreen, 0, 0);
-                }, 150);
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
             }
-
-            window.addEventListener('resize', resize);
-            resize();
-            buildOffscreen();
-
-            let scrollY = window.scrollY;
-            window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
-
-            window.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY + scrollY;
-            });
-
-            // Pre-build a small lookup table of dot positions inside the
-            // reveal-radius bounding box so the hot loop only touches those dots.
-            const localDots = [];
-            const pad = revealRadius + dotSpacing;
-            for (let dx = -pad; dx <= pad; dx += dotSpacing) {
-                for (let dy = -pad; dy <= pad; dy += dotSpacing) {
-                    const dist = Math.hypot(dx, dy);
-                    if (dist < revealRadius) {
-                        const proximity = 1 - (dist / revealRadius);
-                        localDots.push({
-                            dx, dy,
-                            opacity: 0.05 + proximity * 0.55,
-                            radius:  (0.5  + proximity * 4) / 2
-                        });
-                    }
-                }
-            }
-
-            // Track the previous smoothed position so we can erase only the
-            // area that actually changed between frames.
-            let prevX = smoothedX, prevY = smoothedY;
 
             function draw() {
-                smoothedX += (mouseX - smoothedX) * lerpFactor;
-                smoothedY += (mouseY - smoothedY) * lerpFactor;
+                ctx.clearRect(0, 0, W, H);
+                ctx.fillStyle = '#000005';
+                ctx.fillRect(0, 0, W, H);
 
-                // Skip the repaint if the cursor hasn't moved meaningfully.
-                if (Math.abs(smoothedX - prevX) < 0.5 && Math.abs(smoothedY - prevY) < 0.5) {
-                    requestAnimationFrame(draw);
-                    return;
-                }
+                const grad = ctx.createRadialGradient(mx * W, my * H, 0, mx * W, my * H, Math.max(W, H) * 0.6);
+                grad.addColorStop(0, 'rgba(10, 30, 70, 0.3)');
+                grad.addColorStop(0.3, 'rgba(8, 20, 50, 0.15)');
+                grad.addColorStop(0.7, 'rgba(5, 10, 30, 0.05)');
+                grad.addColorStop(1, 'rgba(0, 0, 5, 0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, W, H);
 
-                // Erase the previous glow region: clear it first, then
-                // restore the static dim dots from the offscreen cache.
-                const erasePad = revealRadius + dotSpacing * 2;
-                const ex = prevX - erasePad, ey = prevY - erasePad;
-                const ew = erasePad * 2,     eh = erasePad * 2;
-                ctx.clearRect(ex, ey, ew, eh);
-                ctx.drawImage(offscreen, ex, ey, ew, eh, ex, ey, ew, eh);
+                const grad2 = ctx.createRadialGradient(mx * W, my * H, 0, mx * W, my * H, 120);
+                grad2.addColorStop(0, 'rgba(59, 130, 246, 0.03)');
+                grad2.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                ctx.fillStyle = grad2;
+                ctx.fillRect(0, 0, W, H);
 
-                // Draw the lit-up dots around the new cursor position.
-                // Snap each dot position to the nearest grid point so it
-                // lines up perfectly with the offscreen layer.
-                const snapX = Math.round(smoothedX / dotSpacing) * dotSpacing;
-                const snapY = Math.round(smoothedY / dotSpacing) * dotSpacing;
-
-                for (const d of localDots) {
-                    const dotX = snapX + d.dx;
-                    const dotY = snapY + d.dy;
-                    if (dotX < 0 || dotY < 0 || dotX > width || dotY > height) continue;
-                    ctx.fillStyle = `rgba(59,130,246,${d.opacity})`;
-                    ctx.beginPath();
-                    ctx.arc(dotX, dotY, d.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                prevX = smoothedX;
-                prevY = smoothedY;
                 requestAnimationFrame(draw);
             }
 
-            // Seed the canvas with the static grid before the first frame.
-            ctx.drawImage(offscreen, 0, 0);
-            draw();
-        }
+            document.addEventListener('mousemove', (e) => { mx = e.clientX / W; my = e.clientY / H; });
+            document.addEventListener('touchmove', (e) => {
+                const t = e.touches[0];
+                if (t) { mx = t.clientX / W; my = t.clientY / H; }
+            }, { passive: true });
 
-        // 3D tilt on app preview
-        (function() {
-            const MAX_TILT = 6; // degrees — keep it subtle
-
-            function initTilt() {
-                const card = document.getElementById('app-preview');
-                if (!card) return;
-
-                card.addEventListener('mousemove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    // Normalise cursor position to -1..1 within the card
-                    const nx = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
-                    const ny = ((e.clientY - rect.top)  / rect.height) * 2 - 1;
-                    const rotY =  nx * MAX_TILT;
-                    const rotX = -ny * MAX_TILT;
-                    card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-                    card.style.boxShadow = `
-                        ${-rotY * 2}px ${rotX * 2}px 60px rgba(59,130,246,0.18),
-                        0 20px 60px rgba(0,0,0,0.5)
-                    `;
-                });
-
-                card.addEventListener('mouseleave', () => {
-                    card.style.transform = 'rotateX(0deg) rotateY(0deg)';
-                    card.style.boxShadow = '0 0 60px rgba(59,130,246,0.1), 0 20px 60px rgba(0,0,0,0.5)';
-                });
-            }
-
-            // Run after DOM ready and also re-attach if the view re-renders
-            document.addEventListener('DOMContentLoaded', initTilt);
+            window.addEventListener('resize', resize);
+            window.__bg = { resize };
+            resize();
+            requestAnimationFrame(draw);
         })();
 
-        // App preview slideshow — cycles through 5 images 5 times then stops
-        (function() {
-            const images = [
-                'NovaraPreview.ico',
-                'NovaraPreview2.ico',
-                'NovaraPreview3.ico',
-                'NovaraPreview4.ico',
-                'NovaraPreview5.ico'
-            ];
-            const INTERVAL   = 3000; // ms between auto-advances
-            const FADE_TIME  = 700;  // ms — must match CSS transition
-            const MAX_CYCLES = 5;
-
-            function initSlideshow() {
-                const img  = document.querySelector('#app-preview img');
-                const dots = document.querySelectorAll('.preview-dot');
-                if (!img || !dots.length) return;
-
-                let index  = 0;
-                let cycles = 0;
-                let timer  = null;
-
-                function goTo(newIndex, fromAuto) {
-                    if (newIndex === index) return;
-                    index = newIndex;
-
-                    // Update dots
-                    dots.forEach((d, i) => d.classList.toggle('active', i === index));
-
-                    // Crossfade image
-                    img.style.opacity = '0';
-                    setTimeout(() => {
-                        img.src = images[index];
-                        img.style.opacity = '1';
-                    }, FADE_TIME);
-
-                    if (fromAuto && index === 0) {
-                        cycles++;
-                        if (cycles >= MAX_CYCLES) {
-                            clearInterval(timer);
-                            timer = null;
-                        }
-                    }
-                }
-
-                // Wire up dot clicks — clicking a dot restarts the auto-timer from that slide
-                dots.forEach((dot) => {
-                    dot.addEventListener('click', () => {
-                        const target = parseInt(dot.dataset.index, 10);
-                        // Reset auto-timer so it doesn't jump immediately after a click
-                        if (timer) { clearInterval(timer); startTimer(); }
-                        goTo(target, false);
-                    });
-                });
-
-                function startTimer() {
-                    timer = setInterval(() => {
-                        const next = (index + 1) % images.length;
-                        goTo(next, true);
-                    }, INTERVAL);
-                }
-
-                startTimer();
-            }
-
-            document.addEventListener('DOMContentLoaded', initSlideshow);
+        /* ─── 3D TILT ─── */
+        (function initTilt() {
+            const card = document.getElementById('appPreview');
+            if (!card) return;
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+                card.style.transform = `rotateX(${-ny * 3}deg) rotateY(${nx * 3}deg)`;
+            });
+            card.addEventListener('mouseleave', () => { card.style.transform = 'rotateX(0deg) rotateY(0deg)'; });
         })();
-        window.addEventListener('DOMContentLoaded', observeElements);
+
+        /* ─── SLIDESHOW ─── */
+        (function initSlideshow() {
+            const images = ['NovaraPreview.ico','NovaraPreview2.ico','NovaraPreview3.ico','NovaraPreview4.ico','NovaraPreview5.ico'];
+            const img = document.querySelector('#appPreview img');
+            const dots = document.querySelectorAll('.preview-dot');
+            if (!img || !dots.length) return;
+            let index = 0, cycles = 0, timer = null;
+            function goTo(newIndex, fromAuto) {
+                if (newIndex === index) return;
+                index = newIndex;
+                dots.forEach((d, i) => d.classList.toggle('active', i === index));
+                img.style.opacity = '0';
+                setTimeout(() => { img.src = images[index]; img.style.opacity = '1'; }, 500);
+                if (fromAuto && index === 0) { cycles++; if (cycles >= 5) { clearInterval(timer); timer = null; } }
+            }
+            dots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const target = parseInt(dot.dataset.index, 10);
+                    if (timer) { clearInterval(timer); startTimer(); }
+                    goTo(target, false);
+                });
+            });
+            function startTimer() { timer = setInterval(() => goTo((index + 1) % images.length, true), 3000); }
+            startTimer();
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => { observeReveals(); });
     </script>
 </body>
 </html>
